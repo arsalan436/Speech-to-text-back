@@ -1,38 +1,99 @@
 // routes/transcribe.js
-import express from 'express'
-import fetch from 'node-fetch'
+import express from 'express';
+import multer from 'multer';
+import axios from 'axios';
+import fs from 'fs';
 
-const router = express.Router()
+const router = express.Router();
+const upload = multer({ dest: 'uploads/' }); // ✅ This was missing
 
-router.post('/', async (req, res) => {
+router.post('/transcribe', upload.single('audio'), async (req, res) => {
+  const audioPath = req.file.path;
+
   try {
-    const { audio_url } = req.body
+    // 1. Upload file to AssemblyAI
+    const uploadResponse = await axios({
+      method: 'post',
+      url: 'https://api.assemblyai.com/v2/upload',
+      headers: {
+        authorization: process.env.ASSEMBLYAI_API_KEY, // 💡 use env variable
+        'Transfer-Encoding': 'chunked',
+      },
+      data: fs.createReadStream(audioPath),
+    });
 
-    if (!audio_url) {
-      return res.status(400).json({ error: 'Audio URL is required' })
+    const audioUrl = uploadResponse.data.upload_url;
+
+    // 2. Request transcription
+    const transcriptResponse = await axios.post(
+      'https://api.assemblyai.com/v2/transcript',
+      { audio_url: audioUrl },
+      {
+        headers: { authorization: process.env.ASSEMBLYAI_API_KEY },
+      }
+    );
+
+    const transcriptId = transcriptResponse.data.id;
+
+    // 3. Poll until transcription is complete
+    let transcriptionText = '';
+    let completed = false;
+
+    while (!completed) {
+      const pollRes = await axios.get(
+        `https://api.assemblyai.com/v2/transcript/${transcriptId}`,
+        { headers: { authorization: process.env.ASSEMBLYAI_API_KEY } }
+      );
+
+      if (pollRes.data.status === 'completed') {
+        transcriptionText = pollRes.data.text;
+        completed = true;
+      } else if (pollRes.data.status === 'error') {
+        throw new Error('Transcription failed.');
+      } else {
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+      }
     }
 
-    const response = await fetch('https://api.assemblyai.com/v2/transcript', {
-      method: 'POST',
-      headers: {
-        authorization: process.env.ASSEMBLYAI_API_KEY,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({ audio_url }),
-    })
+    // 4. Return transcription
+    res.json({ transcription: transcriptionText });
 
-    const data = await response.json()
-
-    res.status(200).json({ transcript_id: data.id, status: data.status })
-  } catch (error) {
-    console.error('Error during transcription:', error)
-    res.status(500).json({ error: 'Failed to transcribe audio' })
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Transcription process failed.' });
+  } finally {
+    fs.unlink(audioPath, () => {}); // clean up temp file
   }
-})
+});
 
+// Save transcription note to Supabase
+router.post('/save-note', async (req, res) => {
+  const { user_id, title, transcription, language = 'en' } = req.body;
 
+  if (!user_id || !transcription) {
+    return res.status(400).json({ error: 'Missing user_id or transcription' });
+  }
 
-router.get('/:id', async (req, res) => {
+  const { data, error } = await supabase
+    .from('transcriptions')
+    .insert([
+      {
+        user_id,
+        transcript: transcription,
+        audio_url: title || 'Untitled Note', // storing title in `audio_url` column
+        language,
+      },
+    ]);
+
+  if (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Failed to save transcription' });
+  }
+
+  res.json({ message: 'Note saved successfully', data });
+});
+
+router.get('/transcribe/:id', async (req, res) => {
   const transcriptId = req.params.id;
 
   try {
