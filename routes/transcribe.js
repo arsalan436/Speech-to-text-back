@@ -3,6 +3,7 @@ import express from 'express';
 import multer from 'multer';
 import axios from 'axios';
 import fs from 'fs';
+import { supabase } from '../SupabaseClient.js';
 
 const router = express.Router();
 const upload = multer({ dest: 'uploads/' }); // ✅ This was missing
@@ -118,6 +119,70 @@ router.get('/transcribe/:id', async (req, res) => {
     res.status(500).json({ error: 'Something went wrong while polling transcription' });
   }
 });
+
+router.get('/user-notes/:user_id', async (req, res) => {
+  const { user_id } = req.params;
+
+  if (!user_id) {
+    return res.status(400).json({ error: 'Missing user_id' });
+  }
+
+  const { data, error } = await supabase
+    .from('transcriptions') // Your table name
+    .select('id, transcript, created_at, audio_url') // ✅ Only fetch required fields
+    .eq('user_id', user_id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching notes:', error);
+    return res.status(500).json({ error: 'Failed to fetch notes' });
+  }
+
+  res.status(200).json(data); // ✅ This now only includes id, text, created_at
+});
+
+// DELETE /api/note/:id
+router.delete('/:id', async (req, res) => {
+  const { id } = req.params;
+
+  const { error } = await supabase
+    .from('transcriptions')
+    .delete()
+    .eq('id', id);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(200).json({ message: 'Note deleted successfully' });
+});
+
+// PUT /api/note/:id
+router.put('/:id', async (req, res) => {
+  const { id } = req.params;
+  const { audio_url, transcript } = req.body;
+
+  try {
+    const { data, error } = await supabase
+      .from('transcriptions') // 👈 use your Supabase table name here
+      .update({ audio_url, transcript })
+      .eq('id', id)
+      .select() // to return the updated row
+
+    if (error) {
+      console.error('Supabase update error:', error.message);
+      return res.status(500).json({ error: 'Failed to update note' });
+    }
+
+    res.json(data[0]); // send the updated note
+  } catch (err) {
+    console.error('Server error:', err.message);
+    res.status(500).json({ error: 'Server error while updating note' });
+  }
+});
+
+
+
+
+
+
 
 
 export default router
