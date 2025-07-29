@@ -18,7 +18,7 @@ backend/
 
 2. Open terminal in the `backend/` folder and run:
 
-```bash
+
 npm install
 
     Create a .env file in the root of the backend/ folder and add:
