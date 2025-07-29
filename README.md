@@ -6,7 +6,7 @@ This is the backend of my Speech-to-Text app. It is built with Node.js and Expre
 ## 📁 Folder Structure
 
 backend/
-├── index.js // Main Express server file
+├── app.js // Main Express server file
 ├── routes/ // All API routes
 ├── .env // API keys and secrets
 ├── package.json
