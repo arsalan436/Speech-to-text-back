@@ -142,7 +142,7 @@ router.get('/user-notes/:user_id', async (req, res) => {
 });
 
 // DELETE /api/note/:id
-router.delete('/:id', async (req, res) => {
+router.delete('/delete/:id', async (req, res) => {
   const { id } = req.params;
 
   const { error } = await supabase
@@ -155,7 +155,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // PUT /api/note/:id
-router.put('/:id', async (req, res) => {
+router.put('/update/:id', async (req, res) => {
   const { id } = req.params;
   const { audio_url, transcript } = req.body;
 
