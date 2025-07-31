@@ -6,7 +6,7 @@ dotenv.config()
 
 const app = express()
 app.use(cors({
-  origin: 'http://localhost:5173'
+  origin: ['http://localhost:5173',"https://speech-to-text-007.netlify.app"]
 }));
 app.use(express.json())
 app.use('/api/note', transcribeRoutes)
