@@ -55,6 +55,10 @@ It will run on http://localhost:5000.
 
     GET /api/transcriptions/:user_id – Fetch all saved transcriptions for a user.
 
-✅ To-Do
+## DEployment
 
-    Add deployment instructions (coming soon).
+The backend of this project is deployed using Render.
+
+I pushed my backend code to GitHub and then went to Render. There, I clicked on “Create Web Service” and chose to deploy from GitHub. I selected the backend repository for this project and configured the necessary environment variables required by the app.
+
+Render automatically picked up the build and start commands from my package.json file. After finishing the setup, I deployed the backend service. Once deployed, Render gave me a live backend API URL, which I’ve used in my frontend app to make API calls.
