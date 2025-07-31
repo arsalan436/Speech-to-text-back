@@ -179,7 +179,7 @@ router.put('/update/:id', async (req, res) => {
 });
 
 // ping api for test 
-app.get('/ping', (req, res) => {
+router.get('/ping', (req, res) => {
   res.status(200).send('pong');
 });
 
