@@ -1,5 +1,6 @@
-import { transcribeWithAssemblyAI } from './assemblyAiClient.js'
-import { supabase } from './SupabaseClient.js'
+// import { transcribeWithAssemblyAI } from './assemblyAiClient.js'
+import { transcribeWithAssemblyAI } from '../clients/assemblyAiClient.js'
+import { supabase } from '../clients/SupabaseClient.js'
 
 // Call this with the audio URL and user ID
 export const processAndStoreTranscription = async (userId, audioUrl, language = 'en') => {

@@ -3,7 +3,7 @@ import express from 'express';
 import multer from 'multer';
 import axios from 'axios';
 import fs from 'fs';
-import { supabase } from '../SupabaseClient.js';
+import { supabase } from '../clients/SupabaseClient.js';
 
 const router = express.Router();
 const upload = multer({ dest: 'uploads/' }); // ✅ This was missing
@@ -185,11 +185,4 @@ router.get('/ping', (req, res) => {
 
 
 
-
-
-
-
-
 export default router
-
-
